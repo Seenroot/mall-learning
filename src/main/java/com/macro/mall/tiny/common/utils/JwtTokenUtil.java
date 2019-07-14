@@ -34,18 +34,48 @@ public class JwtTokenUtil {
     private Long expiration;
 
     /**
-     * 根据负责生成JWT的token
+     * 根据用户信息生成token
+     * 这里封装了一层，不直接使用 username 做参数的原因是可以方便未来增加其他要封装到 token 中的信息
+     */
+    public String generateToken(UserDetails userDetails) {
+        Map<String, Object> claims = new HashMap<>();
+        // 把用户名封装进下载的轮子的 token 的主体 claims 中
+        claims.put(CLAIM_KEY_USERNAME, userDetails.getUsername());
+        // 并在里面封装了当前时间（方便后面判断 token 是否在修改密码之前生成的）
+        claims.put(CLAIM_KEY_CREATED, new Date());
+        return generateToken(claims);
+    }
+
+    /**
+     * 根据 claims 生成 JWT的token
      */
     private String generateToken(Map<String, Object> claims) {
         return Jwts.builder()
                 .setClaims(claims)
+                // 再计算 token 过期的时间写入到 轮子的 token 中
                 .setExpiration(generateExpirationDate())
+                // 对 轮子的 token 进行加密，生成一串字符串，即我们定制的 token
                 .signWith(SignatureAlgorithm.HS512, secret)
                 .compact();
     }
 
     /**
+     * 从token中获取登录用户名
+     */
+    public String getUserNameFromToken(String token) {
+        String username;
+        try {
+            Claims claims = getClaimsFromToken(token);
+            username =  claims.getSubject();
+        } catch (Exception e) {
+            username = null;
+        }
+        return username;
+    }
+
+    /**
      * 从token中获取JWT中的负载
+     * 先对 token 进行解密，获得 token 中封装好的主体部分 claims (前面第二部引入的 别人造好的轮子)，然后尝试获得里面封装的 username 字符串
      */
     private Claims getClaimsFromToken(String token) {
         Claims claims = null;
@@ -68,32 +98,19 @@ public class JwtTokenUtil {
     }
 
     /**
-     * 从token中获取登录用户名
-     */
-    public String getUserNameFromToken(String token) {
-        String username;
-        try {
-            Claims claims = getClaimsFromToken(token);
-            username =  claims.getSubject();
-        } catch (Exception e) {
-            username = null;
-        }
-        return username;
-    }
-
-    /**
      * 验证token是否还有效
      *
      * @param token       客户端传入的token
      * @param userDetails 从数据库中查询出来的用户信息
      */
     public boolean validateToken(String token, UserDetails userDetails) {
+        // 从 token 中获取到 username
         String username = getUserNameFromToken(token);
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
 
     /**
-     * 判断token是否已经失效
+     * 根据当前时间和过期时间对比 判断 token 是否已经失效
      */
     private boolean isTokenExpired(String token) {
         Date expiredDate = getExpiredDateFromToken(token);
@@ -101,21 +118,11 @@ public class JwtTokenUtil {
     }
 
     /**
-     * 从token中获取过期时间
+     * 从 token 中获取 设置的过期时间
      */
     private Date getExpiredDateFromToken(String token) {
         Claims claims = getClaimsFromToken(token);
         return claims.getExpiration();
-    }
-
-    /**
-     * 根据用户信息生成token
-     */
-    public String generateToken(UserDetails userDetails) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put(CLAIM_KEY_USERNAME, userDetails.getUsername());
-        claims.put(CLAIM_KEY_CREATED, new Date());
-        return generateToken(claims);
     }
 
     /**

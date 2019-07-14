@@ -34,10 +34,13 @@ import java.util.List;
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled=true)
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
+    // 注入UmsAdminService
     @Autowired
     private UmsAdminService adminService;
+    // 注入无访问权限处理器
     @Autowired
     private RestfulAccessDeniedHandler restfulAccessDeniedHandler;
+    // 注入未登录或token失效处理器
     @Autowired
     private RestAuthenticationEntryPoint restAuthenticationEntryPoint;
 
@@ -49,11 +52,18 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.csrf() // 由于使用的是JWT，我们这里不需要csrf
-                .disable()
+                .disable() // 禁用 Spring Security 自带的跨域处理
                 .sessionManagement() // 基于token，所以不需要session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .authorizeRequests()
+                // 在配置类中配置 或者 在 相应的controller中设置
+                // @PreAuthorize("isAnonymous()") // 可匿名访问，就是不需要携带有效的 token
+                .antMatchers("/auth").authenticated()       // 需携带有效 token
+                // @PreAuthorize("hasAuthority('admin')")
+                .antMatchers("/admin").hasAuthority("admin")   // 需拥有 admin 这个权限
+                // @PreAuthorize("hasRole('ADMIN')")
+                .antMatchers("/ADMIN").hasRole("ADMIN")     // 需拥有 ADMIN 这个身份
                 .antMatchers(HttpMethod.GET, // 允许对于网站静态资源的无授权访问
                         "/",
                         "/*.html",
@@ -67,19 +77,27 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .permitAll()
                 .antMatchers("/admin/login", "/admin/register") // 对登录注册要允许匿名访问
                 .permitAll()
-                .antMatchers(HttpMethod.OPTIONS)//跨域请求会先进行一次options请求
+                .antMatchers(HttpMethod.OPTIONS)// 跨域请求会先进行一次options请求
                 .permitAll()
                 // .antMatchers("/**") // 测试时全部运行访问
                 // .permitAll()
                 .anyRequest() // 除上面外的所有请求全部需要鉴权认证
                 .authenticated();
+
         // 禁用缓存
         httpSecurity.headers().cacheControl();
         // 添加JWT filter
+        /**
+         * json web token 权限控制的核心配置部分
+         * 在 Spring Security 开始判断本次会话是否有权限时的前一瞬间
+         * 通过添加过滤器将 token 解析，将用户所有的权限写入本次 Spring Security 的会话
+         */
         httpSecurity.addFilterBefore(jwtAuthenticationTokenFilter(), UsernamePasswordAuthenticationFilter.class);
-        // 添加自定义未授权和未登录结果返回
+        // 对无权限访问的返回结果进行优化，添加自定义未授权和未登录结果返回，使前端更好处理
         httpSecurity.exceptionHandling()
+                // 403 处理器
                 .accessDeniedHandler(restfulAccessDeniedHandler)
+                // 401 处理器
                 .authenticationEntryPoint(restAuthenticationEntryPoint);
     }
 
@@ -96,6 +114,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     /**
      * SpringSecurity定义的用于对密码进行编码及比对的接口，目前使用的是BCryptPasswordEncoder
+     * 通过 @Bean 注册到 Spring 中
      * @return
      */
     @Bean
@@ -105,6 +124,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     /**
      * SpringSecurity定义的核心接口，用于根据用户名获取用户信息，需要自行实现
+     * 通过 @Bean 注册到 Spring 中
      * @return
      */
     @Bean
@@ -114,7 +134,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             UmsAdmin admin = adminService.getAdminByUsername(username);
             if (admin != null) {
                 List<UmsPermission> permissionList = adminService.getPermissionList(admin.getId());
-                return new AdminUserDetails(admin,permissionList);
+                return new AdminUserDetails(admin, permissionList);
             }
             throw new UsernameNotFoundException("用户名或密码错误");
         };
@@ -122,6 +142,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     /**
      * 在用户名和密码校验前添加的过滤器，如果有jwt的token，会自行根据token信息进行登录
+     * 通过 @Bean 注册到 Spring 中
      * @return
      */
     @Bean
@@ -129,6 +150,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return new JwtAuthenticationTokenFilter();
     }
 
+    /**
+     * 通过 @Bean 注册到 Spring 中
+     * @return
+     * @throws Exception
+     */
     @Bean
     @Override
     public AuthenticationManager authenticationManagerBean() throws Exception {
