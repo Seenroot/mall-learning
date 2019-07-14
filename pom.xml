@@ -56,7 +56,7 @@
 			<artifactId>pagehelper-spring-boot-starter</artifactId>
 			<version>1.2.10</version>
 		</dependency>
-		<!-- MyBatis 生成器 -->
+		<!--MyBatis 生成器-->
 		<dependency>
 			<groupId>org.mybatis.generator</groupId>
 			<artifactId>mybatis-generator-core</artifactId>
