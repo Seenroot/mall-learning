@@ -26,8 +26,8 @@ import java.util.Map;
 public class UmsAdminController {
     @Autowired
     private UmsAdminService adminService;
-    @Value("${jwt.tokenHeader}")
-    private String tokenHeader;
+    // @Value("${jwt.tokenHeader}")
+    // private String tokenHeader;
     @Value("${jwt.tokenHead}")
     private String tokenHead;
 
