@@ -52,14 +52,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity httpSecurity) throws Exception {
 
-        // 添加JWT filter
-        /**
-         * json web token 权限控制的核心配置部分
-         * 在 Spring Security 开始判断本次会话是否有权限时的前一瞬间
-         * 通过添加过滤器将 token 解析，将用户所有的权限写入本次 Spring Security 的会话
-         */
-        httpSecurity.addFilterBefore(jwtAuthenticationTokenFilter(), UsernamePasswordAuthenticationFilter.class);
-
         httpSecurity.csrf() // 由于使用的是JWT，我们这里不需要csrf
                 .disable() // 禁用 Spring Security 自带的跨域处理
                 .sessionManagement() // 基于token，所以不需要session
@@ -96,13 +88,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         // 禁用缓存
         httpSecurity.headers().cacheControl();
 
-        // // 添加JWT filter
-        // /**
-        //  * json web token 权限控制的核心配置部分
-        //  * 在 Spring Security 开始判断本次会话是否有权限时的前一瞬间
-        //  * 通过添加过滤器将 token 解析，将用户所有的权限写入本次 Spring Security 的会话
-        //  */
-        // httpSecurity.addFilterBefore(jwtAuthenticationTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+        // 添加JWT filter
+        /**
+         * json web token 权限控制的核心配置部分
+         * 在 Spring Security 开始判断本次会话是否有权限时的前一瞬间
+         * 通过添加过滤器将 token 解析，将用户所有的权限写入本次 Spring Security 的会话
+         */
+        httpSecurity.addFilterBefore(jwtAuthenticationTokenFilter(), UsernamePasswordAuthenticationFilter.class);
 
         // 对无权限访问的返回结果进行优化，添加自定义未授权和未登录结果返回，使前端更好处理
         httpSecurity.exceptionHandling()
@@ -142,6 +134,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
      */
     @Bean
     public UserDetailsService userDetailsService() {
+        // 这是一个匿名内部类，该类实现了接口UserDetailsService，重写了loadUserByUsername的方法，并立即创建了对象，该对象有一个loadUserByUsername方法
         // 获取登录用户信息
         return username -> {
             // 根据username数据库中拿到用户信息

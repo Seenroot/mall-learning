@@ -21,6 +21,8 @@ import java.io.IOException;
 /**
  * JWT登录授权过滤器：Spring Security 的核心操作服务类
  * 在用户名和密码校验前添加的过滤器，如果请求中有jwt的token且有效，会取出token中的用户名，然后调用SpringSecurity的API进行登录操作
+ *
+ * OncePerRequestFilter 确保在一次请求只通过一次filter，而不需要重复执行
  */
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthenticationTokenFilter.class);
@@ -40,6 +42,7 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
         // 尝试获取请求头
         String authHeader = request.getHeader(this.tokenHeader);
+        LOGGER.info("执行了JWT token过滤器");
 
         // 存在token，并且是以 this.tokenHead 开头的
         if (authHeader != null && authHeader.startsWith(this.tokenHead)) {
@@ -49,12 +52,15 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             // 通过 token 来获取 username
             String username = jwtTokenUtil.getUserNameFromToken(authToken);
             LOGGER.info("checking username:{}", username);
-            // 存在 username 并且 本次会话的权限还未被写入
+            LOGGER.info("认证信息", SecurityContextHolder.getContext().getAuthentication());
+            // 存在 username 并且 本次会话的权限还未被写入，则来写入该username用户对应权限到session中
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 // UserDetails 类是 Spring Security 用于保存用户权限的实体类
+                // 此处利用的是多态 此处 userDetailsService.loadUserByUsername 返回值 AdminUserDetails对象 赋值给父类UserDetails变量
+                // userDetails 包含 用户基本信息和权限
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                 if (jwtTokenUtil.validateToken(authToken, userDetails)) {
-                    // 生成通过认证
+                    // 生成通过 认证
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     LOGGER.info("authenticated user:{}", username);
