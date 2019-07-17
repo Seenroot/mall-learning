@@ -11,8 +11,15 @@ import java.util.List;
 
 /**
  * 搜索中的商品信息
+ * 商品实体类 / 商品文档对象
+ *
+ * 不需要中文分词的字段设置成@Field(type = FieldType.Keyword)类型
+ * 需要中文分词的设置成@Field(analyzer = "ik_max_word",type = FieldType.Text)类型
  */
-@Document(indexName = "pms", type = "product",shards = 1,replicas = 0)
+@Document(indexName = "pms", type = "product", shards = 1, replicas = 0)
+// indexName索引名称 可以理解为数据库名 必须为小写 不然会报org.elasticsearch.indices.InvalidIndexNameException异常
+// type类型 可以理解为表名
+// 文档-表中的记录
 public class EsProduct implements Serializable {
     private static final long serialVersionUID = -1L;
     @Id
@@ -39,7 +46,7 @@ public class EsProduct implements Serializable {
     private Integer stock;
     private Integer promotionType;
     private Integer sort;
-    @Field(type =FieldType.Nested)
+    @Field(type = FieldType.Nested)
     private List<EsProductAttributeValue> attrValueList;
 
     // 省略了所有getter和setter方法
