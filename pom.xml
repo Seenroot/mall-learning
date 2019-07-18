@@ -15,7 +15,11 @@
 	<description>Demo project for Spring Boot</description>
 
 	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>1.8</java.version>
+		<skipTests>true</skipTests>
+		<docker.image.prefix>mall-tiny</docker.image.prefix>
 	</properties>
 
 	<dependencies>
@@ -158,6 +162,62 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+
+			<!-- Docker maven plugin -->
+			<plugin>
+				<groupId>com.spotify</groupId>
+				<artifactId>docker-maven-plugin</artifactId>
+				<version>1.1.0</version>
+				<executions>
+					<execution>
+						<id>build-image</id>
+						<phase>package</phase>
+						<goals>
+							<goal>build</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<!--<docker.image.prefix>mall-tiny</docker.image.prefix>在该文件的前面配置-->
+					<!--要带$符号-->
+					<imageName>${docker.image.prefix}/${project.artifactId}:${project.version}</imageName>
+					<!--<dockerDirectory>src/main/docker</dockerDirectory>-->
+					<!--<dockerHost>http://127.0.0.1:80</dockerHost>-->
+					<baseImage>java:8</baseImage>
+					<entryPoint>["java", "-jar","/${project.build.finalName}.jar"]
+					</entryPoint>
+					<resources>
+						<resource>
+							<targetPath>/</targetPath>
+							<directory>${project.build.directory}</directory>
+							<include>${project.build.finalName}.jar</include>
+						</resource>
+					</resources>
+				</configuration>
+				<!--
+					配置说明如下：
+
+					executions.execution.phase:此处配置了在maven打包应用时构建docker镜像；
+
+					imageName：用于指定镜像名称，mall-tiny是仓库名称，${project.artifactId}为镜像名称，${project.version}为镜像版本号；
+
+					dockerDirectory：配置了Dockerfile的路径
+
+					dockerHost：打包后上传到的docker服务器地址；
+
+					baseImage：该应用所依赖的基础镜像，此处为java；
+
+					entryPoint：docker容器启动时执行的命令；
+
+					resources.resource.targetPath：将打包后的资源文件复制到该目录；
+
+					resources.resource.directory：需要复制的文件所在目录，maven打包的应用jar包保存在target目录下面；
+
+					resources.resource.include：需要复制的文件，打包好的应用jar包。
+				-->
+			</plugin>
+			<!-- Docker maven plugin -->
+
 		</plugins>
 	</build>
 

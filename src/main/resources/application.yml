@@ -27,7 +27,7 @@ spring:
     mongodb:
       host: localhost # mongodb的连接地址
       port: 27017 # mongodb的连接端口号
-      database: mall-port # mongodb的连接的数据库
+      database: mall-port # mongodb的连接的数据库 用Robo 3T客户端链接到这个数据库即可看到数据
   rabbitmq:
     host: localhost # rabbitmq的连接地址
     port: 5672 # rabbitmq的连接端口号

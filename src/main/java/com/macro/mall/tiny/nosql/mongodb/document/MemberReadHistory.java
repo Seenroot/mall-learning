@@ -8,6 +8,9 @@ import java.util.Date;
 
 /**
  * 用户商品浏览历史记录
+ *  @Document: 标示映射到Mongodb文档上的领域对象
+ *  @Id: 标示某个域为ID域
+ *  @Indexed: 标示某个字段为Mongodb的索引字段
  */
 @Document
 public class MemberReadHistory {
