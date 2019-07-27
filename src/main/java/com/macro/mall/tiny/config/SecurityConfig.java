@@ -73,7 +73,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         "/**/*.css",
                         "/**/*.js",
                         "/swagger-resources/**",
-                        "/v2/api-docs/**"
+                        "/v2/api-docs/**",
+                        "/webjars/**" // fixed: swagger接口页面的LOGO图片无法加载
                 )
                 .permitAll()
                 .antMatchers("/admin/login", "/admin/register") // 对登录注册要允许匿名访问
@@ -134,7 +135,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
      */
     @Bean
     public UserDetailsService userDetailsService() {
-        // 这是一个匿名内部类，该类实现了接口UserDetailsService，重写了loadUserByUsername的方法，并立即创建了对象，该对象有一个loadUserByUsername方法
+        // 这是Lambda表达式创建了一个对象，目标类型是接口UserDetailsService，实现了loadUserByUsername的方法，并立即创建了对象，该对象有一个loadUserByUsername方法
         // 获取登录用户信息
         return username -> {
             // 根据username数据库中拿到用户信息

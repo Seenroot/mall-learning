@@ -42,7 +42,6 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
         // 尝试获取请求头
         String authHeader = request.getHeader(this.tokenHeader);
-        LOGGER.info("执行了JWT token过滤器");
 
         // 存在token，并且是以 this.tokenHead 开头的
         if (authHeader != null && authHeader.startsWith(this.tokenHead)) {
